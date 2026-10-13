@@ -1,0 +1,66 @@
+mp-shell
+
+[Custom]
+
+<!DOCTYPE html><html lang="fa" dir="rtl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@600;800;900&display=swap" rel="stylesheet"><title>مار و پله سه‌بعدی شاهنامه</title><style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}:root{--g:#ffd76a;--m:#9fb0d6}
+html,body{width:100%;height:100%;overflow:hidden;background:#070a17;font-family:'Vazirmatn',Tahoma,system-ui,sans-serif;color:#fff}canvas{display:block;touch-action:none}
+.overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;z-index:30;background:radial-gradient(circle at 50% 22%,#233063,#0b1024 58%,#05070f)}.hidden{display:none!important}
+h1{font-size:clamp(19px,5.2vw,38px);font-weight:900;line-height:1.5;background:linear-gradient(90deg,#ffe6a8,#ff8a3d,#ffe6a8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.divider{width:min(420px,80vw);height:16px;position:relative;margin:6px 0 12px}.divider:before{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,215,106,.7),transparent)}.divider:after{content:"";position:absolute;top:50%;left:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;transform:rotate(45deg);background:var(--g);box-shadow:0 0 12px rgba(255,215,106,.8)}
+.sub{color:var(--m);margin:0 6px 16px;font-size:clamp(12px,3.2vw,14.5px);max-width:560px;line-height:1.9}
+.modes{display:flex;flex-direction:column;gap:10px;width:min(560px,92vw)}
+.mode-card{cursor:pointer;border:1px solid rgba(255,215,106,.32);background:linear-gradient(180deg,#212e5e,#0d132a);border-radius:15px;padding:12px 15px;display:flex;align-items:center;gap:13px;font-family:inherit;color:#fff;text-align:right;box-shadow:0 10px 26px rgba(0,0,0,.45)}.mode-card:active{transform:scale(.99)}
+.mode-card .art{width:48px;height:48px;flex:0 0 48px;border-radius:13px;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,rgba(255,215,106,.2),rgba(18,26,58,.25));border:1px solid rgba(255,215,106,.35)}.mode-card .art svg{width:29px;height:29px}
+.mt{font-weight:900;font-size:clamp(15px,4vw,18px)}.ms{display:block;color:var(--m);font-size:clamp(11px,3vw,12.5px);margin-top:3px}.foot{margin-top:18px;color:#5f6f96;font-size:11.5px}
+.roster{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:min(560px,92vw);max-height:46vh;overflow:auto;padding:4px}@media(max-width:560px){.roster{grid-template-columns:repeat(2,1fr)}}
+.hero-card{cursor:pointer;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,#182142,#0c1124);border-radius:14px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;color:#fff}.hero-card.sel{border-color:var(--g);box-shadow:0 0 0 1px var(--g)}
+.medal{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,255,255,.35)}.medal svg{width:24px;height:24px}.hn{font-size:12px;font-weight:800}.hw{font-size:9.5px;color:var(--m)}
+.actions{display:flex;gap:12px;margin-top:15px;flex-wrap:wrap;justify-content:center}.primary,.ghost{cursor:pointer;border-radius:14px;padding:11px 27px;font-family:inherit;font-weight:800;font-size:clamp(14px,3.8vw,16px)}.primary{border:none;color:#1a1206;background:linear-gradient(160deg,#ffe08a,#f5a623)}.primary:disabled{filter:grayscale(.75) brightness(.7);cursor:default}.ghost{background:transparent;border:1px solid rgba(255,215,106,.4);color:var(--g)}
+#hud{position:fixed;inset:0;z-index:15;pointer-events:none}#topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:11px 13px;gap:10px}
+#turn{background:linear-gradient(160deg,#212e5e,#0e142c);border:1px solid rgba(255,215,106,.35);border-radius:14px;padding:8px 14px;font-weight:800;font-size:clamp(12px,3.3vw,16px);display:flex;align-items:center;gap:8px}#turn .dot{width:13px;height:13px;border-radius:50%;box-shadow:0 0 12px currentColor}
+#leftcol{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.topbtn{pointer-events:auto;cursor:pointer;border:1px solid rgba(255,215,106,.4);background:rgba(20,28,58,.88);color:var(--g);font-family:inherit;font-weight:800;font-size:clamp(11px,3vw,12.5px);border-radius:12px;padding:7px 11px;display:flex;align-items:center;gap:6px}.topbtn svg{width:15px;height:15px}
+#players{display:flex;flex-direction:column;gap:6px}.pcard{background:rgba(12,18,40,.84);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:5px 10px;font-size:clamp(11px,2.9vw,13.5px);display:flex;align-items:center;gap:7px;min-width:112px}.pcard.active{border-color:var(--g);box-shadow:0 0 16px rgba(255,215,106,.3)}.pcard .c{width:12px;height:12px;border-radius:50%}.pcard .tag{font-size:9.5px;color:var(--m);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:0 5px}.pcard .pos{margin-inline-start:auto;font-weight:800;color:var(--g)}
+#bubbles{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:18;display:flex;flex-direction:column;gap:8px;align-items:center;width:min(92vw,430px);pointer-events:none}.bubble{background:linear-gradient(160deg,#161f40,#0a0e20);border:1px solid rgba(255,215,106,.5);border-radius:14px;padding:8px 13px;box-shadow:0 12px 30px rgba(0,0,0,.55);animation:bb .28s ease;max-width:100%}.bubble.you{border-color:rgba(126,224,192,.75)}.bubble .bn{font-weight:900;font-size:11.5px;margin-bottom:3px}.bubble .bt{font-size:13px;color:#e9eefc;line-height:1.8}@keyframes bb{from{opacity:0;transform:translateY(-10px)}to{opacity:1}}
+#bottom{position:absolute;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 14px calc(12px + env(safe-area-inset-bottom))}#replyBar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:min(94vw,540px)}.rbtn{pointer-events:auto;cursor:pointer;border:1px solid rgba(126,224,192,.5);background:rgba(14,30,42,.92);color:#c7f6e8;font-family:inherit;font-size:11.5px;font-weight:700;border-radius:12px;padding:8px 11px}
+#rollBtn{pointer-events:auto;cursor:pointer;border:none;border-radius:16px;padding:12px 30px;font-family:inherit;font-size:clamp(14px,3.9vw,18px);font-weight:800;color:#1a1206;background:linear-gradient(160deg,#a9f5bd,#22c55e);display:flex;align-items:center;gap:9px}#rollBtn svg{width:20px;height:20px}#rollBtn:disabled{filter:grayscale(.75) brightness(.7);cursor:default}#lastRoll{font-size:clamp(13px,3.6vw,17px);font-weight:800;color:var(--g);min-height:20px;display:flex;align-items:center;gap:6px}#hint{color:var(--m);font-size:clamp(10px,2.8vw,12.5px);min-height:14px}
+#win{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:radial-gradient(circle at 50% 35%,#30280c,#060812 70%)}#win h2{font-size:clamp(24px,7vw,46px);font-weight:900;background:linear-gradient(90deg,#ffe08a,#ff8a3d);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}#win .who{font-size:clamp(17px,4.8vw,28px);margin-bottom:22px}
+#confetti{position:fixed;inset:0;z-index:35;pointer-events:none;touch-action:none}#flash{position:fixed;inset:0;z-index:25;pointer-events:none;background:radial-gradient(circle at 50% 60%,rgba(180,30,60,.9),rgba(50,0,40,.4) 60%,transparent 82%);opacity:0;transition:opacity .1s}
+#err{position:fixed;top:4px;left:4px;right:4px;z-index:99;color:#ffb4b4;font-size:11px;text-align:center;pointer-events:none;text-shadow:0 1px 4px #000}
+</style></head><body>
+<div id="app"></div><div id="flash"></div><div id="err"></div>
+<div id="hud" class="hidden"><div id="topbar"><div id="turn"><span class="dot" style="color:#d64545;background:#d64545"></span><span id="turnTxt">نوبت</span></div><div id="leftcol"><div style="display:flex;gap:8px"><button id="ttsBtn" class="topbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 010 7"/></svg> نریشن</button><button id="resetBtn" class="topbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.3-5.6"/><path d="M20 4v5h-5"/></svg> نما</button></div><div id="players"></div></div></div><div id="bubbles"></div>
+<div id="bottom"><div id="replyBar"></div><div id="lastRoll"></div><button id="rollBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#14210f" stroke-width="1.7" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.5" fill="#14210f" stroke="none"/><circle cx="15.5" cy="15.5" r="1.5" fill="#14210f" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="#14210f" stroke="none"/></svg> انداختن تاس</button><div id="hint">یک‌انگشتی بچرخان · دو‌انگشتی زوم</div></div></div>
+<div id="menu" class="overlay"><h1>مار و پله سه‌بعدی شاهنامه</h1><div class="divider"></div><div class="sub">پهلوان خود را برگزین، تاس سه‌بعدی بینداز، سیمرغ تو را به آسمان می‌برد، از چنگ ضحّاکِ مارْدوش می‌گریزی و خود را به تخت جمشید (خانهٔ ۱۰۰) می‌رسانی.</div><div class="modes">
+<button class="mode-card" data-mode="1"><span class="art"><svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6.4" r="2.7"/><path d="M12 9.3c-2.7 0-4.1 2-4.1 4.3V21h8.2v-7.4c0-2.3-1.4-4.3-4.1-4.3z"/></svg></span><span><span class="mt">تک‌نفره</span><span class="ms">تنها تا تخت جمشید</span></span></button>
+<button class="mode-card" data-mode="2"><span class="art"><svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.6" cy="7" r="2.2"/><path d="M7.6 9.4c-2.2 0-3.4 1.6-3.4 3.6V21h6.8v-8c0-2-1.2-3.6-3.4-3.6z"/><circle cx="16.4" cy="7" r="2.2"/><path d="M16.4 9.4c-2.2 0-3.4 1.6-3.4 3.6V21h6.8v-8c0-2-1.2-3.6-3.4-3.6z"/></svg></span><span><span class="mt">دو‌نفره</span><span class="ms">تو با یک حریف افسانه‌ای</span></span></button>
+<button class="mode-card" data-mode="4"><span class="art"><svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6.4" r="1.7"/><path d="M6 8.2c-1.6 0-2.5 1.2-2.5 2.7V17h5v-6c0-1.5-.9-2.8-2.5-2.8z"/><circle cx="12" cy="5.4" r="1.8"/><path d="M12 7.3c-1.7 0-2.6 1.3-2.6 2.9V17h5.2v-6.8c0-1.6-.9-2.9-2.6-2.9z"/><circle cx="18" cy="6.4" r="1.7"/><path d="M18 8.2c-1.6 0-2.5 1.2-2.5 2.7V17h5v-6c0-1.5-.9-2.8-2.5-2.8z"/></svg></span><span><span class="mt">چهار‌نفره</span><span class="ms">تو در برابر سه حریف افسانه‌ای</span></span></button>
+</div><div class="foot">سیمرغ · ضحّاک ماردوش · تخت جمشید · نریشن رایگان مرورگر</div></div>
+<div id="select" class="overlay hidden"><h1>پهلوان خود را برگزین</h1><div class="divider"></div><div class="sub" id="selSub"></div><div class="roster" id="roster"></div><div class="actions"><button class="ghost" id="backBtn">بازگشت</button><button class="primary" id="playBtn" disabled>آغاز نبرد</button></div></div>
+<div id="win" class="hidden"><h2>پیروزی!</h2><div class="who" id="winWho"></div><div class="actions"><button class="primary" id="againBtn">بازی دوباره</button><button class="ghost" id="menuBtn">منوی اصلی</button></div></div>
+<canvas id="confetti"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== Maropelle · shell.html — لودر ماژول‌ها (سبک قطار ۲۳:۵۹) ===== */
+var VER='v1';
+var BASE='https://cdn.jsdelivr.net/gh/metabolicbit-jpg/maropelle@main/';
+var MODS=['src/lang.js','src/audio.js','src/render.js','src/heroes.js','src/creatures.js','src/ui.js','src/core.js','src/main.js'];
+(function(){
+  var errEl=document.getElementById('err');
+  function inject(code){try{var s=document.createElement('script');s.textContent=code;document.body.appendChild(s);}catch(e){errEl.textContent='inject: '+e.message;}}
+  var i=0;
+  function next(){
+    if(i>=MODS.length)return;
+    var p=MODS[i++],key='mp_'+VER+'_'+p;
+    fetch(BASE+p+'?t='+VER).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();}).then(function(txt){try{localStorage.setItem(key,txt);}catch(e){}inject(txt);next();}).catch(function(){
+      var c=null;try{c=localStorage.getItem(key);}catch(e){}
+      if(c){inject(c);next();}else{errEl.textContent='بارگذاری ناموفق: '+p;}
+    });
+  }
+  next();
+})();
+</script>
+</body></html>
+
+---
+Powered by Paean
