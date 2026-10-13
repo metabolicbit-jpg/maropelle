@@ -2,21 +2,34 @@ mp-ui
 
 [Custom]
 
-/* ===== Maropelle · src/ui.js — صفحه‌ها، HUD، حباب گفت‌وگو، انتخاب پهلوان، کاغذرنگی ===== */
-var rollBtn=document.getElementById("rollBtn"),turnTxt=document.getElementById("turnTxt"),turnDot=document.querySelector("#turn .dot"),playersEl=document.getElementById("players"),hintEl=document.getElementById("hint"),lastRollEl=document.getElementById("lastRoll"),bubEl=document.getElementById("bubbles"),repEl=document.getElementById("replyBar"),ttsBtn=document.getElementById("ttsBtn"),homeBtn=document.getElementById("homeBtn");
+/* ===== Maropelle · src/ui.js — صفحه‌ها، HUD، دکمهٔ ویژگی، حباب گفت‌وگو، انتخاب پهلوان ===== */
+var rollBtn=document.getElementById("rollBtn"),turnTxt=document.getElementById("turnTxt"),turnDot=document.querySelector("#turn .dot"),playersEl=document.getElementById("players"),hintEl=document.getElementById("hint"),lastRollEl=document.getElementById("lastRoll"),bubEl=document.getElementById("bubbles"),repEl=document.getElementById("replyBar"),ttsBtn=document.getElementById("ttsBtn"),homeBtn=document.getElementById("homeBtn"),powBtn=document.getElementById("powBtn"),powTxt=document.getElementById("powTxt");
 var DSVG='<svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.6" stroke-linejoin="round" style="width:16px;height:16px"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="#ffd76a" stroke="none"/></svg>';
 var SCR=["menu","select","hud","win"];
 function show(id){SCR.forEach(function(x){document.getElementById(x).classList.toggle("hidden",x!==id);});}
 
-/* ---- بازگشت به داشبورد (از بازی یا از صفحهٔ پیروزی) ---- */
 function gotoMenu(){
-  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
-  started=false;gameOver=false;busy=false;
-  try{resetCam();}catch(e){}
-  try{stopConfetti();}catch(e){}
-  try{bubEl.innerHTML="";repEl.innerHTML="";}catch(e){}
-  try{rollBtn.disabled=false;}catch(e){}
-  show("menu");
+ try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
+ started=false;gameOver=false;busy=false;
+ try{resetCam();}catch(e){}
+ try{stopConfetti();}catch(e){}
+ try{bubEl.innerHTML="";repEl.innerHTML="";}catch(e){}
+ try{rollBtn.disabled=false;}catch(e){}
+ updPowBtn();
+ show("menu");
+}
+
+/* ---- دکمهٔ ویژگی ---- */
+function updPowBtn(){
+ if(!powBtn)return;
+ var p=players[humanIdx];
+ if(!p||!started||gameOver){powBtn.disabled=true;powBtn.classList.remove("ready");if(powTxt)powTxt.textContent="ویژگی";return;}
+ var pw=POWERS[p.key];
+ if(powTxt)powTxt.textContent=(pw?pw.name:"ویژگی");
+ if(pw)powBtn.title=pw.desc;
+ var ready=!!p.pow&&cur===humanIdx&&!busy;
+ powBtn.disabled=!ready;
+ powBtn.classList.toggle("ready",ready);
 }
 
 function renderP(){
@@ -27,6 +40,7 @@ function renderP(){
   var c=document.createElement("span");c.className="c";c.style.background=hex;
   var n=document.createElement("span");n.textContent=p.h.name;d.append(c,n);
   if(p.isAI){var tg=document.createElement("span");tg.className="tag";tg.textContent="هوشمند";d.append(tg);}
+  if(p.shield){var sh=document.createElement("span");sh.className="tag";sh.style.borderColor="#ffd76a";sh.style.color="#ffd76a";sh.textContent="رویین‌تن";d.append(sh);}
   var pos=document.createElement("span");pos.className="pos";pos.textContent=fa(p.square);d.append(pos);
   playersEl.appendChild(d);
  });
@@ -64,12 +78,13 @@ function openSelect(mode){
  document.getElementById("selSub").textContent=mode===1?"مهرهٔ تو از میان پهلوانان شاهنامه":("تو + "+fa(mode-1)+" حریف افسانه‌ای — پهلوان خود را برگزین");
  var ro=document.getElementById("roster");ro.innerHTML="";
  HKEYS.forEach(function(k){
-  var h=HEROES[k],b=document.createElement("button");b.className="hero-card";b.dataset.k=k;
+  var h=HEROES[k],pw=POWERS[k],b=document.createElement("button");b.className="hero-card";b.dataset.k=k;
   var m=document.createElement("span");m.className="medal";m.style.background="radial-gradient(circle at 40% 30%,"+h.css+",rgba(0,0,0,.55))";m.innerHTML=WICON[h.weapon];
   var n=document.createElement("span");n.className="hn";n.textContent=h.name;
   var w=document.createElement("span");w.className="hw";w.textContent=h.w;
-  b.append(m,n,w);
-  b.onclick=function(){humanHero=k;Array.prototype.forEach.call(ro.children,function(c){c.classList.toggle("sel",c.dataset.k===k);});document.getElementById("playBtn").disabled=false;SFX.click();};
+  var pwEl=document.createElement("span");pwEl.className="hpow";pwEl.textContent="✨ "+(pw?pw.name:"");
+  b.append(m,n,w,pwEl);
+  b.onclick=function(){humanHero=k;Array.prototype.forEach.call(ro.children,function(c){c.classList.toggle("sel",c.dataset.k===k);});document.getElementById("playBtn").disabled=false;SFX.click();hintEl.textContent=(POWERS[k]?POWERS[k].desc:"");};
   ro.appendChild(b);
  });
  document.getElementById("playBtn").disabled=true;
@@ -96,6 +111,7 @@ function stopConfetti(){if(confT){clearInterval(confT);confT=null;cx2.clearRect(
 function bindUI(){
  Array.prototype.forEach.call(document.querySelectorAll(".mode-card"),function(b){b.addEventListener("click",function(){SFX.click();openSelect(+b.dataset.mode);});});
  rollBtn.addEventListener("click",function(){initAudio();SFX.click();rollDice();});
+ if(powBtn)powBtn.addEventListener("click",function(){initAudio();SFX.click();usePower();});
  document.getElementById("resetBtn").addEventListener("click",function(){SFX.click();resetCam();});
  document.getElementById("backBtn").addEventListener("click",function(){SFX.click();show("menu");});
  document.getElementById("playBtn").addEventListener("click",function(){SFX.click();startGame(modeCount,humanHero);});
