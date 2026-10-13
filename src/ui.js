@@ -3,10 +3,21 @@ mp-ui
 [Custom]
 
 /* ===== Maropelle · src/ui.js — صفحه‌ها، HUD، حباب گفت‌وگو، انتخاب پهلوان، کاغذرنگی ===== */
-var rollBtn=document.getElementById("rollBtn"),turnTxt=document.getElementById("turnTxt"),turnDot=document.querySelector("#turn .dot"),playersEl=document.getElementById("players"),hintEl=document.getElementById("hint"),lastRollEl=document.getElementById("lastRoll"),bubEl=document.getElementById("bubbles"),repEl=document.getElementById("replyBar"),ttsBtn=document.getElementById("ttsBtn");
+var rollBtn=document.getElementById("rollBtn"),turnTxt=document.getElementById("turnTxt"),turnDot=document.querySelector("#turn .dot"),playersEl=document.getElementById("players"),hintEl=document.getElementById("hint"),lastRollEl=document.getElementById("lastRoll"),bubEl=document.getElementById("bubbles"),repEl=document.getElementById("replyBar"),ttsBtn=document.getElementById("ttsBtn"),homeBtn=document.getElementById("homeBtn");
 var DSVG='<svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.6" stroke-linejoin="round" style="width:16px;height:16px"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="#ffd76a" stroke="none"/></svg>';
 var SCR=["menu","select","hud","win"];
 function show(id){SCR.forEach(function(x){document.getElementById(x).classList.toggle("hidden",x!==id);});}
+
+/* ---- بازگشت به داشبورد (از بازی یا از صفحهٔ پیروزی) ---- */
+function gotoMenu(){
+  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}
+  started=false;gameOver=false;busy=false;
+  try{resetCam();}catch(e){}
+  try{stopConfetti();}catch(e){}
+  try{bubEl.innerHTML="";repEl.innerHTML="";}catch(e){}
+  try{rollBtn.disabled=false;}catch(e){}
+  show("menu");
+}
 
 function renderP(){
  playersEl.innerHTML="";
@@ -89,7 +100,8 @@ function bindUI(){
  document.getElementById("backBtn").addEventListener("click",function(){SFX.click();show("menu");});
  document.getElementById("playBtn").addEventListener("click",function(){SFX.click();startGame(modeCount,humanHero);});
  document.getElementById("againBtn").addEventListener("click",function(){SFX.click();startGame(totalPlayers,humanHero);});
- document.getElementById("menuBtn").addEventListener("click",function(){SFX.click();started=false;gameOver=false;resetCam();stopConfetti();show("menu");});
+ document.getElementById("menuBtn").addEventListener("click",function(){SFX.click();gotoMenu();});
+ if(homeBtn)homeBtn.addEventListener("click",function(){SFX.click();gotoMenu();});
  ttsBtn.addEventListener("click",function(){SFX.click();toggleTTS();});
  addEventListener("resize",function(){cc.width=innerWidth;cc.height=innerHeight;});
  addEventListener("keydown",function(e){if(e.code==="Space"){e.preventDefault();if(!rollBtn.disabled){initAudio();SFX.click();rollDice();}}});
