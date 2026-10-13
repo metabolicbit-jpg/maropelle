@@ -2,10 +2,9 @@ mp-creatures
 
 [Custom]
 
-/* ===== Maropelle · src/creatures.js — ضحّاک ماردوش + سیمرغ + انیمیشن رخداد ===== */
+/* ===== Maropelle · src/creatures.js — ضحّاک + سیمرغ + ویژگی‌های ویژه ===== */
 var ZAHAK_INFO={},SIMS={};
 
-/* ---- ابزار مشترک ---- */
 function clearG(g){while(g.children.length){var c=g.children[g.children.length-1];g.remove(c);if(c.traverse)c.traverse(function(o){if(o.geometry)o.geometry.dispose();var m=o.material;if(Array.isArray(m))m.forEach(function(x){x.dispose();});else if(m)m.dispose();});}}
 function marker(cell,rc,gc){var pos=sq(cell);
  var r=new THREE.Mesh(new THREE.TorusGeometry(T*.3,.055,8,24),new THREE.MeshBasicMaterial({color:rc}));r.rotation.x=-Math.PI/2;r.position.set(pos.x,tileTop+.18,pos.z);specialsGroup.add(r);
@@ -40,7 +39,6 @@ function buildZahhak(from){
  var cr=new THREE.Mesh(new THREE.CylinderGeometry(.265,.265,.13,18,1,true),gold);cr.position.y=2.23;g.add(cr);
  for(var i=0;i<6;i++){var a2=i/6*Math.PI*2,sp=new THREE.Mesh(new THREE.ConeGeometry(.045,.22,6),gold);sp.position.set(Math.sin(a2)*.24,2.4,Math.cos(a2)*.24);g.add(sp);}
  var gem=new THREE.Mesh(new THREE.OctahedronGeometry(.07),new THREE.MeshStandardMaterial({color:0xff2a2a,emissive:0x881111,emissiveIntensity:1}));gem.position.set(0,2.27,.25);g.add(gem);
- /* اژدهایان شانه — با سر جدا و طول پایه برای کشش */
  function snake(side){
   var S=new THREE.Group(),pts=[new THREE.Vector3(0,0,0),new THREE.Vector3(side*.16,.34,.06),new THREE.Vector3(side*.04,.64,-.06),new THREE.Vector3(side*.22,.98,.08),new THREE.Vector3(side*.1,1.26,0)];
   var c=new THREE.CatmullRomCurve3(pts);
@@ -57,7 +55,6 @@ function buildZahhak(from){
  var pos=sq(from);g.position.set(pos.x,0,pos.z-.15);specialsGroup.add(g);
  ZAHAK_INFO[from]={group:g,snakes:[s1,s2],phase:Math.random()*6.28,busy:false};
 }
-/* کشش/نشانه‌گیریِ اژدها به سمت هدف (بدون ساخت هندسهٔ موقت) */
 var _UP=new THREE.Vector3(0,1,0),_v1=new THREE.Vector3(),_v2=new THREE.Vector3(),_q1=new THREE.Quaternion();
 function aimSnake(z,S,target){
  z.group.updateMatrixWorld(true);
@@ -75,10 +72,28 @@ function aimSnake(z,S,target){
 }
 function relaxSnake(S){S.g.quaternion.setFromEuler(new THREE.Euler(0,0,0));S.g.scale.set(1,1,1);S.headG.scale.set(1,1,1);}
 
-/* ---- انیمیشن: گرفتن و حمل مهره توسط ضحّاک ---- */
+/* ---- ضحّاک: حمله (اگر مهره رویین‌تن داشته باشد، نیش پس زده می‌شود) ---- */
 function zahhakDrag(pi,a,b){
  var z=ZAHAK_INFO[a],p=players[pi];
- if(!z){var t0=twp(pi,b);p.mesh.position.set(t0.x,0,t0.z);p.square=b;return Promise.resolve();}
+ if(!z){var t0=twp(pi,b);p.mesh.position.set(t0.x,0,t0.z);p.square=b;return Promise.resolve(true);}
+ /* ---- سپرِ رویین‌تن ---- */
+ if(p.shield){
+  p.shield=false;z.busy=true;
+  var gp=twp(pi,a);
+  hintEl.textContent="رویین‌تنی! زرهِ اسفندیار نیشِ ضحّاک را پس زد";SFX.ruyinHit();flash(.55);shk(.9);
+  return anim(.5,function(t){
+    var e=Math.sin(t*Math.PI);
+    z.group.rotation.x=-.4*e;
+    z.snakes.forEach(function(S,i){var k=1+.7*e;S.g.scale.set(1,k,1);S.headG.scale.set(1,1/k,1);S.g.rotation.set(0,0,(i?1:-1)*.5*e);});
+    p.mesh.position.set(gp.x,gp.y+.08*e,gp.z);
+    if(t*9%1<.4)spark(gp.clone().add(new THREE.Vector3(0,.8,0)),0xffe08a,2);
+  }).then(function(){
+    spark(gp.clone().add(new THREE.Vector3(0,.9,0)),0xffe08a,44);
+    z.snakes.forEach(function(S){S.g.scale.set(1,1,1);S.g.rotation.set(0,0,0);});
+    z.group.rotation.x=0;z.busy=false;
+    return anim(.4,function(t){p.mesh.position.set(gp.x,Math.sin(t*Math.PI)*.3,gp.z);}).then(function(){p.mesh.position.set(gp.x,0,gp.z);return wait(150);});
+  }).then(function(){return false;});
+ }
  z.busy=true;
  var grab=twp(pi,a);
  hintEl.textContent="ضحّاکِ مارْدوش! اژدهایانش او را به دندان گرفتند";SFX.roar();
@@ -118,7 +133,7 @@ function zahhakDrag(pi,a,b){
      aimSnake(z,z.snakes[0],back);aimSnake(z,z.snakes[1],back);});
  }).then(function(){
    z.snakes.forEach(relaxSnake);z.group.rotation.x=0;z.busy=false;return wait(120);
- });
+ }).then(function(){return true;});
 }
 
 /* ================= سیمرغ ================= */
@@ -130,7 +145,8 @@ function wingInner(){var inner=new THREE.Group(),bm=new THREE.MeshStandardMateri
  var e=new THREE.Mesh(new THREE.CylinderGeometry(.028,.028,1.55,6),new THREE.MeshStandardMaterial({color:0xffe0a0,metalness:.6,roughness:.3}));e.rotation.z=Math.PI/2;e.position.set(.8,.185,0);inner.add(e);return inner;}
 function wRig(){var fl=new THREE.Group(),sw=new THREE.Group(),ro=new THREE.Group();fl.add(sw);sw.add(ro);ro.add(wingInner());return {flap:fl,sweep:sw,roll:ro};}
 function tF(l,w,c){var g=fGeo(l,w);g.rotateX(-Math.PI/2);g.rotateY(Math.PI/2);return new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.22,side:THREE.DoubleSide,emissive:0x401200,emissiveIntensity:.4}));}
-var FSW=1.8,FRL=-1,SRL=Math.PI/2;
+/* نشسته: بال‌ها تاشده و خوابیده روی پشت، در امتداد دُم */
+var FSW=1.55,FRL=-1.4,SRL=Math.PI/2;
 function buildSimorgh(from){
  var g=new THREE.Group();
  var gold=new THREE.MeshStandardMaterial({color:0xffb347,roughness:.45,metalness:.35,emissive:0x3a1c00,emissiveIntensity:.4}),gd=new THREE.MeshStandardMaterial({color:0xe8862b,roughness:.5,metalness:.3}),crm=new THREE.MeshStandardMaterial({color:0xffe6b0,roughness:.55}),bkm=new THREE.MeshStandardMaterial({color:0xffd54a,roughness:.35,metalness:.5}),eye=new THREE.MeshBasicMaterial({color:0xff3b2f}),lgm=new THREE.MeshStandardMaterial({color:0xffcf5a,roughness:.5,metalness:.3});
@@ -146,12 +162,11 @@ function buildSimorgh(from){
  for(var m=-3;m<=3;m++){var tf=tF(.9,.19,m%2?0xd9622a:0xffb347);tf.position.set(m*.07,.04,-.52);tf.rotation.y=m*.16;g.add(tf);}
  [-1,1].forEach(function(s){var tf2=tF(1.5,.13,0xff8a2f);tf2.position.set(s*.11,.02,-.55);tf2.rotation.y=s*.28;g.add(tf2);});
  [-1,1].forEach(function(s){var l=new THREE.Mesh(new THREE.CylinderGeometry(.028,.028,.28,6),lgm);l.position.set(s*.11,-.33,.1);g.add(l);});
- var RW=wRig();RW.flap.position.set(.3,.18,.02);g.add(RW.flap);var LW=wRig();LW.flap.position.set(-.3,.18,.02);LW.flap.scale.x=-1;g.add(LW.flap);
+ var RW=wRig();RW.flap.position.set(.24,.34,0);g.add(RW.flap);var LW=wRig();LW.flap.position.set(-.24,.34,0);LW.flap.scale.x=-1;g.add(LW.flap);
  g.scale.setScalar(.8);var pch=sq(from),bY=1.62;g.position.set(pch.x,bY,pch.z);g.traverse(function(o){if(o.isMesh)o.castShadow=true;});specialsGroup.add(g);
  SIMS[from]={group:g,RW:RW,LW:LW,perch:pch.clone(),baseY:bY,phase:Math.random()*6.28,flapSpeed:1.2,flapAmt:.1,busy:false,spread:0,spreadNow:0};
 }
 function setFlap(s,sp,am){s.flapSpeed=sp;s.flapAmt=am;}
-/* ---- انیمیشن: پرواز و حمل مهره ---- */
 function flyTo(sim,a,b,dur,arc){
  sim.spread=1;setFlap(sim,5,.5);
  var from=a.clone();
@@ -163,43 +178,114 @@ function flyTo(sim,a,b,dur,arc){
   sim.group.rotation.y=ny;sim.group.rotation.z=cl(-(ny-sim.group.rotation.y)*6,-.45,.45);
  }).then(function(){sim.group.rotation.z=0;});
 }
-function simorghCarry(pi,a,b){
- var sim=SIMS[a],p=players[pi];
- if(!sim){var t2=twp(pi,b);p.mesh.position.set(t2.x,0,t2.z);p.square=b;return Promise.resolve();}
+/* پروازِ کامل: فرود → در چنگال گرفتن → قوسِ بلند → پیاده‌کردن → بازگشت */
+function carryWith(sim,pi,fromPos,toPos,msg){
  sim.busy=true;sim.spread=1;
- var tS=twp(pi,a),tE=twp(pi,b),perch=sim.perch.clone();
- hintEl.textContent="سیمرغ افسانه‌ای فرود آمد تا "+p.h.name+" را پرواز دهد";SFX.simorgh();
- var above=tS.clone().add(new THREE.Vector3(0,2.2,0));
+ var p=players[pi],perch=sim.perch.clone();
+ var above=fromPos.clone().add(new THREE.Vector3(0,2.2,0));
  return flyTo(sim,sim.group.position.clone(),above,1,1.8).then(function(){
-  var start=above.clone(),end=tE.clone().add(new THREE.Vector3(0,1.5,0));setFlap(sim,6,.55);
+  var start=above.clone(),end=toPos.clone().add(new THREE.Vector3(0,1.5,0));setFlap(sim,6,.55);
   return anim(2.3,function(t){
    var e=sm(t);
    sim.group.position.lerpVectors(start,end,e);
    sim.group.position.y+=Math.sin(t*Math.PI)*2.2;
-   var ty=Math.atan2(tE.x-sim.group.position.x,tE.z-sim.group.position.z),ny=la(sim.group.rotation.y,ty,.06);
+   var ty=Math.atan2(toPos.x-sim.group.position.x,toPos.z-sim.group.position.z),ny=la(sim.group.rotation.y,ty,.06);
    sim.group.rotation.y=ny;sim.group.rotation.z=cl(-(ny-sim.group.rotation.y)*6,-.4,.4);
    p.mesh.position.set(sim.group.position.x+Math.sin(t*Math.PI*2)*.16,sim.group.position.y-1.5,sim.group.position.z+Math.cos(t*Math.PI*2)*.1);
    p.mesh.rotation.z=Math.sin(t*Math.PI*2)*.13;
    if(t*8%1<.3)spark(p.mesh.position.clone(),0xffe08a,1);
   });
  }).then(function(){
-  sim.group.rotation.z=0;var end=tE.clone().add(new THREE.Vector3(0,1.5,0));
-  return anim(.6,function(t){sim.group.position.lerpVectors(end,tE.clone().add(new THREE.Vector3(0,1.05,0)),sm(t));});
+  sim.group.rotation.z=0;var end=toPos.clone().add(new THREE.Vector3(0,1.5,0));
+  return anim(.6,function(t){sim.group.position.lerpVectors(end,toPos.clone().add(new THREE.Vector3(0,1.05,0)),sm(t));});
  }).then(function(){
-  p.mesh.position.set(tE.x,0,tE.z);p.mesh.rotation.set(0,0,0);spark(tE,0xffe08a,30);shk(.15);
-  hintEl.textContent=p.h.name+" با سیمرغ به خانهٔ "+fa(b)+" رسید";return wait(220);
+  p.mesh.position.set(toPos.x,0,toPos.z);p.mesh.rotation.set(0,0,0);spark(toPos,0xffe08a,30);shk(.15);
+  if(msg)hintEl.textContent=msg;
+  return wait(220);
  }).then(function(){return flyTo(sim,sim.group.position.clone(),perch.clone().add(new THREE.Vector3(0,1.1,0)),1.6,1.5);})
  .then(function(){
   sim.spread=0;var high=perch.clone().add(new THREE.Vector3(0,1.1,0));
   return anim(.6,function(t){var e=sm(t);sim.group.position.lerpVectors(high,perch,e);sim.group.rotation.y=la(sim.group.rotation.y,0,.12);});
  }).then(function(){sim.group.position.copy(perch);sim.group.rotation.set(0,0,0);setFlap(sim,1.2,.1);sim.busy=false;});
 }
-/* ---- تیک موجودات (از حلقهٔ اصلی) ---- */
+function simorghCarry(pi,a,b){
+ var sim=SIMS[a],p=players[pi];
+ if(!sim){var t2=twp(pi,b);p.mesh.position.set(t2.x,0,t2.z);p.square=b;return Promise.resolve(true);}
+ hintEl.textContent="سیمرغ افسانه‌ای فرود آمد تا "+p.h.name+" را پرواز دهد";SFX.simorgh();
+ return carryWith(sim,pi,twp(pi,a),twp(pi,b),p.h.name+" با سیمرغ به خانهٔ "+fa(b)+" رسید").then(function(){return true;});
+}
+
+/* ================= ویژگی: زال — پرِ سیمرغ ================= */
+function pickFreeSim(){var s=null;Object.keys(SIMS).forEach(function(k){if(!s&&!SIMS[k].busy)s=SIMS[k];});return s;}
+function powerZalAnim(pi,toSq){
+ var p=players[pi],fromPos=twp(pi,p.square),toPos=twp(pi,toSq);
+ SFX.feal();
+ var fMat=new THREE.MeshStandardMaterial({color:0xffe9b0,emissive:0xffaa22,emissiveIntensity:1.4,transparent:true,opacity:1,side:THREE.DoubleSide});
+ var fgrp=new THREE.Group();
+ var f1=new THREE.Mesh(new THREE.ConeGeometry(.075,.55,8),fMat);f1.position.y=.2;fgrp.add(f1);
+ var f2=new THREE.Mesh(new THREE.ConeGeometry(.045,.3,8),fMat);f2.position.set(.08,.42,.03);f2.rotation.z=-.3;fgrp.add(f2);
+ fgrp.position.set(fromPos.x,2.5,fromPos.z);specialsGroup.add(fgrp);
+ return anim(.75,function(t){
+   fgrp.position.y=2.5+t*.55;fgrp.rotation.y=t*7;fMat.opacity=1-t*.75;fgrp.scale.setScalar(1-t*.12);
+   if(t*9%1<.45)spark(fgrp.position.clone(),0xffd26a,2);
+ }).then(function(){
+   specialsGroup.remove(fgrp);f1.geometry.dispose();f2.geometry.dispose();fMat.dispose();
+   var sim=pickFreeSim();
+   if(!sim){
+     return anim(.95,function(t){p.mesh.position.lerpVectors(fromPos,toPos,eio(t));p.mesh.position.y=Math.sin(t*Math.PI)*2.8;if(t*8%1<.25)spark(p.mesh.position.clone(),0xffe08a,3);})
+       .then(function(){p.mesh.position.copy(toPos);p.mesh.position.y=0;hintEl.textContent=p.h.name+" را پرِ سیمرغ ۶ خانه جلو برد";});
+   }
+   return carryWith(sim,pi,fromPos,toPos,p.h.name+" را پرِ سیمرغ ۶ خانه جلو برد");
+ });
+}
+
+/* ================= ویژگی: کاوه — درفشِ کاویانی ================= */
+function powerKavehAnim(pi){
+ var base=twp(pi,players[pi].square);
+ SFX.darafsh();
+ var grp=new THREE.Group();
+ var pole=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.3,6),new THREE.MeshStandardMaterial({color:0x3a2c18,roughness:.8}));pole.position.y=1.15;grp.add(pole);
+ var flag=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.72),new THREE.MeshStandardMaterial({color:0x7a1020,roughness:.75,side:THREE.DoubleSide,emissive:0x4a0008,emissiveIntensity:.8}));flag.position.set(.58,1.9,0);grp.add(flag);
+ var star=new THREE.Mesh(new THREE.OctahedronGeometry(.13),new THREE.MeshStandardMaterial({color:0xffd54a,emissive:0xcc8800,emissiveIntensity:1.3}));star.position.set(.58,1.9,-.02);grp.add(star);
+ grp.position.set(base.x,0,base.z);grp.scale.setScalar(.3);specialsGroup.add(grp);
+ var ring=new THREE.Mesh(new THREE.RingGeometry(.4,.55,44),new THREE.MeshBasicMaterial({color:0xffd76a,transparent:true,opacity:.95,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.set(base.x,.22,base.z);specialsGroup.add(ring);
+ var mvs=[];players.forEach(function(pp,idx){var to=Math.min(100,pp.square+2);mvs.push({pp:pp,to:to,a:pp.mesh.position.clone(),b:twp(idx,to)});});
+ return anim(1.15,function(t){
+   var e=eio(t);
+   grp.scale.setScalar(L(.3,1,Math.min(1,t*2.2)));
+   flag.rotation.y=Math.sin(t*9)*.4;flag.scale.x=L(.2,1,Math.min(1,t*1.8));
+   grp.position.y=Math.sin(t*Math.PI)*.25;
+   var rr=1+t*8;ring.scale.setScalar(rr);ring.material.opacity=.95*(1-t);
+   mvs.forEach(function(m){m.pp.mesh.position.lerpVectors(m.a,m.b,e);m.pp.mesh.position.y=Math.sin(e*Math.PI)*1.0;if(t*7%1<.14)spark(m.pp.mesh.position.clone(),0xffd76a,1);});
+ }).then(function(){
+   mvs.forEach(function(m){m.pp.mesh.position.copy(m.b);m.pp.mesh.position.y=0;m.pp.square=m.to;});
+   return anim(.85,function(t){flag.rotation.y=Math.sin(t*7)*.3*(1-t);grp.position.y=-(t*.25);star.rotation.y+=.2;});
+ }).then(function(){
+   specialsGroup.remove(grp);specialsGroup.remove(ring);
+   grp.traverse(function(o){if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+   ring.geometry.dispose();ring.material.dispose();
+ });
+}
+
+/* ================= ویژگی: اسفندیار — رویین‌تن ================= */
+function powerEsfandiarAnim(pi){
+ var p=players[pi],base=twp(pi,p.square);
+ SFX.ruyin();
+ var rMat=new THREE.MeshStandardMaterial({color:0xffe08a,emissive:0xcc8800,emissiveIntensity:1.3,transparent:true,opacity:1});
+ var ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.055,8,32),rMat);ring.rotation.x=-Math.PI/2;ring.position.set(base.x,.55,base.z);specialsGroup.add(ring);
+ return anim(.95,function(t){
+   var e=1+Math.sin(t*Math.PI)*.14;p.mesh.scale.set(e,e,e);
+   ring.rotation.z=t*7;ring.position.y=.55+t*1.2;ring.scale.setScalar(1+t*1.9);rMat.opacity=1-t;
+   if(t*10%1<.35)spark(base.clone().add(new THREE.Vector3(0,.9,0)),0xffe08a,2);
+ }).then(function(){p.mesh.scale.setScalar(1);specialsGroup.remove(ring);ring.geometry.dispose();rMat.dispose();});
+}
+
+/* ---- تیک موجودات ---- */
 function creaturesTick(dt,t){
  Object.keys(SIMS).forEach(function(k){var s=SIMS[k];
   if(!s.busy)s.group.position.y=s.baseY+Math.sin(t*1.1+s.phase)*.1;
   s.spreadNow+=(s.spread-s.spreadNow)*Math.min(1,dt*2);
-  var sw=L(FSW,0,s.spreadNow),ro=L(FRL,SRL,s.spreadNow),sc=L(.8,1,s.spreadNow),fl=Math.sin(t*s.flapSpeed+s.phase)*s.flapAmt;
+  var sw=L(FSW,0,s.spreadNow),ro=L(FRL,SRL,s.spreadNow),sc=L(.82,1,s.spreadNow),fl=Math.sin(t*s.flapSpeed+s.phase)*s.flapAmt;
   [s.RW,s.LW].forEach(function(rig,i){var sg=i===0?1:-1;rig.flap.rotation.z=sg*fl;rig.sweep.rotation.y=sg*sw;rig.roll.rotation.x=sg*ro;rig.roll.scale.setScalar(sc);});
  });
  Object.keys(ZAHAK_INFO).forEach(function(k){var z=ZAHAK_INFO[k];if(z.busy)return;
