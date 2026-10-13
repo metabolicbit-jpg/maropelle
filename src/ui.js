@@ -1,7 +1,3 @@
-mp-ui
-
-[Custom]
-
 /* ===== Maropelle · src/ui.js — صفحه‌ها، HUD، دکمهٔ ویژگی، لوگوی تصویری، حباب گفت‌وگو ===== */
 var rollBtn=document.getElementById("rollBtn"),turnTxt=document.getElementById("turnTxt"),turnDot=document.querySelector("#turn .dot"),playersEl=document.getElementById("players"),hintEl=document.getElementById("hint"),lastRollEl=document.getElementById("lastRoll"),bubEl=document.getElementById("bubbles"),repEl=document.getElementById("replyBar"),ttsBtn=document.getElementById("ttsBtn"),homeBtn=document.getElementById("homeBtn"),powBtn=document.getElementById("powBtn"),powTxt=document.getElementById("powTxt");
 var DSVG='<svg viewBox="0 0 24 24" fill="none" stroke="#ffd76a" stroke-width="1.6" stroke-linejoin="round" style="width:16px;height:16px"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="#ffd76a" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="#ffd76a" stroke="none"/></svg>';
@@ -10,43 +6,81 @@ function show(id){SCR.forEach(function(x){document.getElementById(x).classList.t
 
 /* ================= لوگوی تصویری پهلوانان (شیت ۲ستون×۳ردیف) ================= */
 var HERO_TILES={},sheetTried=false;
-function cellBoxes(W,H,d){
- function bg(i){var a=d[i*4+3];if(a<24)return true;return (d[i*4]<26&&d[i*4+1]<26&&d[i*4+2]<26);}
- function bands(pred,n){
-  var out=[],cur=null;
-  for(var i=0;i<n;i++){ if(pred(i)){ if(cur===null)cur=[i,i]; else cur[1]=i; } else if(cur!==null){ if(cur[1]-cur[0]>=4)out.push(cur); cur=null; } }
-  if(cur!==null)out.push(cur);
-  return out;
- }
- var rb=bands(function(y){for(var x=0;x<W;x++)if(!bg(y*W+x))return true;return false;},H);
- var cb=bands(function(x){for(var y=0;y<H;y++)if(!bg(y*W+x))return true;return false;},W);
- if(rb.length!==3||cb.length!==2)return null;
- var out=[];
- for(var r=0;r<3;r++)for(var c=0;c<2;c++)out.push({x:cb[c][0],y:rb[r][0],w:cb[c][1]-cb[c][0]+1,h:rb[r][1]-rb[r][0]+1});
+function sheetLog(msg){try{if(window.__mpErr)window.__mpErr(msg);}catch(e){}}
+function sheetUrls(){
+ var roots=(typeof SRC!=="undefined"&&SRC&&SRC.length)?SRC.slice():[ASSET_BASE];
+ var alt=(typeof HERO_SHEET_ALT!=="undefined"&&HERO_SHEET_ALT)?HERO_SHEET_ALT:[];
+ var names=[HERO_SHEET].concat(alt),out=[];
+ for(var i=0;i<names.length;i++)for(var j=0;j<roots.length;j++)out.push(roots[j]+names[i]);
  return out;
 }
+function cornerBg(d,W,H){
+ var pts=[0,(W-1),(H-1)*W,(H-1)*W+W-1],r=0,g=0,b=0,c=0;
+ for(var i=0;i<pts.length;i++){var p=pts[i]*4;r+=d[p];g+=d[p+1];b+=d[p+2];c++;}
+ return {r:r/c,g:g/c,b:b/c};
+}
 function buildTiles(img){
- var W=Math.min(1000,img.naturalWidth||1000),sc=W/(img.naturalWidth||W),H=Math.max(1,Math.round((img.naturalHeight||W)*sc));
+ var iw=img.naturalWidth||0,ih=img.naturalHeight||0;
+ if(!iw||!ih)return 0;
+ var W=Math.min(1000,iw),sc=W/iw,H=Math.max(1,Math.round(ih*sc));
  var cv=document.createElement("canvas");cv.width=W;cv.height=H;
  var x=cv.getContext("2d");x.clearRect(0,0,W,H);x.drawImage(img,0,0,W,H);
- var d;try{d=x.getImageData(0,0,W,H).data;}catch(e){return false;}
- var b=cellBoxes(W,H,d);if(!b)return false;
- for(var i=0;i<6;i++){
-  var k=SPRITE_ORDER[i];if(!k)continue;
-  var q=b[i],t=document.createElement("canvas");t.width=q.w;t.height=q.h;
-  var tx=t.getContext("2d");tx.drawImage(cv,q.x,q.y,q.w,q.h,0,0,q.w,q.h);
-  try{HERO_TILES[k]=t.toDataURL("image/png");}catch(e){}
+ var d;try{d=x.getImageData(0,0,W,H).data;}catch(e){sheetLog("⚠ لوگو: تصویر قابل خواندن نبود (CORS)");return 0;}
+ /* ---- ماسکِ جوهر: هر پیکسلی که از رنگ چهار گوشه فاصله دارد = جوهر ---- */
+ var bg=cornerBg(d,W,H),m=new Uint8Array(W*H),ink=0,T1=24,T2=52,p,i;
+ for(i=0,p=0;i<W*H;i++,p+=4){
+  if(d[p+3]<24){m[i]=0;continue;}
+  var dd=Math.max(Math.abs(d[p]-bg.r),Math.abs(d[p+1]-bg.g),Math.abs(d[p+2]-bg.b));
+  var v=dd<T1?0:(dd>=T2?255:Math.round((dd-T1)/(T2-T1)*255));
+  m[i]=v;if(v>60)ink++;
  }
- return true;
+ if(ink<W*H*0.006){sheetLog("⚠ لوگو: پس‌زمینه/جوهر تشخیص داده نشد (تصویر یکدست است؟)");return 0;}
+ /* ---- لایهٔ برش‌خورده: پس‌زمینه شفاف می‌شود ---- */
+ var mk=document.createElement("canvas");mk.width=W;mk.height=H;
+ var mx=mk.getContext("2d"),md=mx.createImageData(W,H),p2;
+ for(i=0,p2=0;i<W*H;i++,p2+=4){md.data[p2]=d[p2];md.data[p2+1]=d[p2+1];md.data[p2+2]=d[p2+2];md.data[p2+3]=m[i];}
+ mx.putImageData(md,0,0);
+ /* ---- کادر کل جوهر ---- */
+ var minX=W,minY=H,maxX=-1,maxY=-1,y,xx;
+ for(y=0;y<H;y++)for(xx=0;xx<W;xx++){if(m[y*W+xx]>60){if(xx<minX)minX=xx;if(xx>maxX)maxX=xx;if(y<minY)minY=y;if(y>maxY)maxY=y;}}
+ if(maxX<0)return 0;
+ var BW=maxX-minX+1,BH=maxY-minY+1,got=0;
+ /* ---- برش مطمئن ۲ستون×۳ردیف + تنگ‌کردن هر خانه ---- */
+ for(var r=0;r<3;r++)for(var c=0;c<2;c++){
+  var k=SPRITE_ORDER[r*2+c];if(!k)continue;
+  var cx0=minX+Math.floor(BW*c/2),cx1=minX+Math.floor(BW*(c+1)/2)-1;
+  var cy0=minY+Math.floor(BH*r/3),cy1=minY+Math.floor(BH*(r+1)/3)-1;
+  var x0=cx1,x1=cx0,y0=cy1,y1=cy0,yy,x2;
+  for(yy=cy0;yy<=cy1;yy++)for(x2=cx0;x2<=cx1;x2++){if(m[yy*W+x2]>60){if(x2<x0)x0=x2;if(x2>x1)x1=x2;if(yy<y0)y0=yy;if(yy>y1)y1=yy;}}
+  if(x1<x0||y1<y0){sheetLog("⚠ لوگو: خانهٔ خالی ("+k+")");continue;}
+  x0=Math.max(0,x0-2);y0=Math.max(0,y0-2);x1=Math.min(W-1,x1+2);y1=Math.min(H-1,y1+2);
+  var w=x1-x0+1,h=y1-y0+1,side=Math.max(w,h),S=256,k2=S/side;
+  var t=document.createElement("canvas");t.width=S;t.height=S;
+  var tx=t.getContext("2d");try{tx.imageSmoothingQuality="high";}catch(e){}
+  tx.drawImage(mk,x0,y0,w,h,(S-w*k2)/2,(S-h*k2)/2,w*k2,h*k2);
+  try{HERO_TILES[k]=t.toDataURL("image/png");got++;}catch(e){}
+ }
+ if(!got)sheetLog("⚠ لوگو: برش تصویر ممکن نشد");
+ return got;
 }
+function refreshSelect(){var s=document.getElementById("select");if(s&&!s.classList.contains("hidden"))openSelect(modeCount);}
 function loadHeroSheet(){
- if(sheetTried||typeof ASSET_BASE==="undefined")return;sheetTried=true;
- try{
-  var im=new Image();im.crossOrigin="anonymous";
-  im.onload=function(){ try{ if(buildTiles(im)){ var s=document.getElementById("select"); if(s&&!s.classList.contains("hidden"))openSelect(modeCount); } }catch(e){} };
-  im.onerror=function(){sheetTried=false;};
-  im.src=ASSET_BASE+HERO_SHEET;
- }catch(e){}
+ if(sheetTried)return;sheetTried=true;
+ if(typeof HERO_SHEET==="undefined")return;
+ var urls=sheetUrls(),i=0;
+ function next(){
+  if(i>=urls.length){sheetLog("⚠ لوگوها بارگذاری نشد. این آدرس را در مرورگر باز کن: "+urls[0]);return;}
+  var u=urls[i++],im=new Image();
+  im.crossOrigin="anonymous";
+  im.onload=function(){
+   var n=0;try{n=buildTiles(im);}catch(e){n=0;}
+   if(n>0){sheetLog("✔ "+fa(n)+" لوگوی تصویری بارگذاری شد.");refreshSelect();}
+   else next();
+  };
+  im.onerror=function(){next();};
+  im.src=u;
+ }
+ next();
 }
 
 function gotoMenu(){
@@ -171,6 +205,3 @@ function bindUI(){
  addEventListener("keydown",function(e){if(e.code==="Space"){e.preventDefault();if(!rollBtn.disabled){initAudio();SFX.click();rollDice();}}});
  loadHeroSheet();
 }
-
----
-Powered by Paean
