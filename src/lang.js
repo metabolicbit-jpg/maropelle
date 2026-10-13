@@ -11,7 +11,17 @@ function eoc(t){return 1-Math.pow(1-t,3);}
 
 /* ---- مسیر تصاویر روی CDN ---- */
 var ASSET_BASE="https://cdn.jsdelivr.net/gh/metabolicbit-jpg/maropelle@main/";
-var HERO_SHEET="assets/heroes-v1.png";   /* شیت ۲ستون×۳ردیف لوگوی پهلوانان (png شفاف) */
+var HERO_SHEET="assets/heroes-v1.png";        /* مسیر اصلی شیت لوگو (۲ستون×۳ردیف) */
+var HERO_SHEET_ALT=[                          /* مسیرهای جانشین — به ترتیب امتحان می‌شوند */
+ "assets/heroes.png",
+ "asset/heroes-v1.png",
+ "img/heroes-v1.png",
+ "images/heroes-v1.png",
+ "heroes-v1.png",
+ "heroes.png",
+ "assets/heroes-v1.jpg",
+ "assets/heroes.jpg"
+];
 /* ترتیب خانه‌های شیت — خواندن چپ‌به‌راست، سطر‌به‌سطر:
    [0]بالا-چپ [1]بالا-راست [2]وسط-چپ [3]وسط-راست [4]پایین-چپ [5]پایین-راست */
 var SPRITE_ORDER=["sohrab","rostam","esfandiar","arash","zal","kaveh"];
